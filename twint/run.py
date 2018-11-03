@@ -74,8 +74,11 @@ class Twint:
                 consecutive_errors_count += 1
                 if consecutive_errors_count < self.config.Retries_count:
                     # Change disguise
-                    self.user_agent = await get.RandomUserAgent()
-                    continue
+                    try:
+                        self.user_agent = await get.RandomUserAgent()
+                    except CancelledError as e:
+                        # Don't really care if request failed once or twice
+                        pass
                 print(str(e) + " [x] run.Feed")
                 print("[!] if get this error but you know for sure that more tweets exist, please open an issue and we will investigate it!")
                 break
