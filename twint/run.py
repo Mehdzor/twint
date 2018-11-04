@@ -1,8 +1,9 @@
 from . import datelock, feed, get, output, verbose, storage
-from asyncio import get_event_loop, CancelledError
+from asyncio import get_event_loop, sleep
 from datetime import timedelta, datetime
 from .storage import db
 import sys
+from concurrent.futures._base import TimeoutError, CancelledError
 
 #import logging
 
@@ -56,7 +57,7 @@ class Twint:
                 elif self.config.TwitterSearch:
                     self.feed, self.init = feed.Json(response)
                 break
-            except CancelledError as e:
+            except CancelledError or TimeoutError:
                 if self.config.Proxy_host.lower() == "tor":
                     print("[?] Timed out, changing Tor identity...")
                     if self.config.Tor_control_password is None:
@@ -65,6 +66,7 @@ class Twint:
                         break
                     else:
                         get.ForceNewTorIdentity(self.config)
+                        await sleep(5)
                         continue
                 else:
                     print(str(e))
@@ -76,9 +78,9 @@ class Twint:
                     # Change disguise
                     try:
                         self.user_agent = await get.RandomUserAgent()
-                    except CancelledError as e:
+                    except CancelledError or TimeoutError:
                         # Don't really care if request failed once or twice
-                        pass
+                        continue
                 print(str(e) + " [x] run.Feed")
                 print("[!] if get this error but you know for sure that more tweets exist, please open an issue and we will investigate it!")
                 break
